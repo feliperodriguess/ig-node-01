@@ -10,7 +10,7 @@ app.use(express.json());
 const users = [];
 
 function checksExistsUserAccount(request, response, next) {
-  const { username } = request.header;
+  const { username } = request.headers;
   const user = users.find((user) => user.username === username);
   if (!user) {
     return response.status(404).json({ error: "User not found." });
@@ -32,7 +32,7 @@ app.post("/users", (request, response) => {
     todos: [],
   };
   users.push(newUser);
-  return response.status(201).json();
+  return response.status(201).json(newUser);
 });
 
 app.get("/todos", checksExistsUserAccount, (request, response) => {
@@ -50,7 +50,7 @@ app.post("/todos", checksExistsUserAccount, (request, response) => {
     created_at: new Date(),
   };
   request.user.todos.push(newTodo);
-  return response.status(201).json();
+  return response.status(201).json(newTodo);
 });
 
 app.put("/todos/:id", checksExistsUserAccount, (request, response) => {
@@ -58,34 +58,28 @@ app.put("/todos/:id", checksExistsUserAccount, (request, response) => {
   const { title, deadline } = request.body;
   const todos = request.user.todos;
   const todo = todos.find((todo) => todo.id === todoId);
+  const todoIndex = todos.findIndex((todo) => todo.id === todoId);
   if (!todo) {
     return response.status(404).json({ error: "Todo not found." });
   }
-  const updatedTodos = todos.map((todo) => {
-    if (todo.id === todoId) {
-      return { ...todo, title, deadline };
-    }
-    return todo;
-  });
+  const updatedTodo = { ...todo, title, deadline };
+  const updatedTodos = todos.splice(todoIndex, updatedTodo);
   request.user.todos = updatedTodos;
-  return response.json();
+  return response.json(updatedTodo);
 });
 
 app.patch("/todos/:id/done", checksExistsUserAccount, (request, response) => {
   const { id: todoId } = request.params;
   const todos = request.user.todos;
   const todo = todos.find((todo) => todo.id === todoId);
+  const todoIndex = todos.findIndex((todo) => todo.id === todoId);
   if (!todo) {
     return response.status(404).json({ error: "Todo not found." });
   }
-  const updatedTodos = todos.map((todo) => {
-    if (todo.id === todoId) {
-      return { ...todo, done: true };
-    }
-    return todo;
-  });
+  const updatedTodo = { ...todo, done: true };
+  const updatedTodos = todos.splice(todoIndex, updatedTodo);
   request.user.todos = updatedTodos;
-  return response.json();
+  return response.json(updatedTodo);
 });
 
 app.delete("/todos/:id", checksExistsUserAccount, (request, response) => {
